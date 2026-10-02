@@ -6,7 +6,7 @@ Painel em HTML (arquivo único) que responde perguntas de negócio sobre 100 ven
 
 ## Prints
 
-![Painel completo, parte de cima](print-geral-1.png)
+![Painel completo, parte de cima](print-geral-1.webp)
 ![Painel completo, gráficos](print-geral-2.png)
 ![Filtro aplicado: família Macan](print-filtro-macan.png)
 

@@ -73,4 +73,4 @@ O que mudou até a versão final:
 ## Arquivos
 
 - `index.html`: o dashboard.
-- `print-geral-1.png`, `print-geral-2.png`, `print-filtro-macan.png`: evidências de que o painel funciona.
+- `print-geral-1.webp`, `print-geral-2.png`, `print-filtro-macan.png`: evidências de que o painel funciona.

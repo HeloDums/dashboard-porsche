@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Painel de vendas Porsche</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     Tokens. Visual escuro, grafite com vermelho Porsche usado como destaque.
+     ============================================================ */
+  :root {
+    --bg: #0B0C0E;
+    --panel: #14161A;
+    --panel-2: #1A1D22;
+    --line: #272B31;
+    --text: #F1EFEA;
+    --muted: #9BA1A9;
+    --red: #D5001C;
+    --red-hot: #F0243A;
+    --ink-rgb: 241, 239, 234;
+    --grid: rgba(241, 239, 234, 0.08);
+    --font-title: "Barlow Condensed", "Arial Narrow", "Segoe UI", Arial, sans-serif;
+    --font-text: "Barlow", "Segoe UI", Arial, sans-serif;
+    color-scheme: dark;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0B0C0E; --panel: #14161A; --text: #F1EFEA; } }
+  :root[data-theme="dark"] { --bg: #0B0C0E; --panel: #14161A; --text: #F1EFEA; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--text); font-family: var(--font-text); font-size: 17px; line-height: 1.45;
+    background-color: var(--bg);
+    background-image: radial-gradient(900px 520px at 100% 100%, rgba(213, 0, 28, 0.16), transparent 70%);
+    background-attachment: fixed;
+    border-top: 3px solid var(--red);
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 0 24px 64px; }
+  button:focus-visible, select:focus-visible { outline: 2px solid var(--red-hot); outline-offset: 2px; }
+
+  /* ---------- Topo ---------- */
+  .topbar { padding: 20px 0; font-family: var(--font-title); font-weight: 600; font-size: 22px; letter-spacing: 0.28em; }
+
+  /* ---------- Hero: título + medidor de entregas ---------- */
+  .hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); gap: 32px; align-items: center; padding: 20px 0 40px; }
+  h1 { font-family: var(--font-title); font-weight: 600; font-size: clamp(48px, 8vw, 104px); line-height: 0.92; letter-spacing: -0.01em; margin: 0; }
+  .hero p { color: var(--muted); font-size: 20px; max-width: 46ch; margin: 22px 0 0; }
+  .gauge { width: 100%; max-width: 380px; justify-self: end; }
+  .gauge svg { display: block; width: 100%; height: auto; }
+  .g-track { fill: none; stroke: var(--panel-2); stroke-width: 16; stroke-linecap: round; }
+  .g-fill { fill: none; stroke: var(--red); stroke-width: 16; stroke-linecap: round; transition: stroke-dasharray 0.6s ease; }
+  .g-tick { stroke: var(--muted); stroke-width: 1.5; }
+  .g-tick.major { stroke: var(--text); stroke-width: 2.5; }
+  .g-num { font-family: var(--font-title); font-weight: 600; font-size: 74px; fill: var(--text); }
+  .g-label { font-family: var(--font-text); font-size: 15px; fill: var(--muted); }
+
+  /* ---------- Estrutura: filtros à esquerda, conteúdo à direita ---------- */
+  .layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; }
+  .side { position: sticky; top: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .side h2 { font-family: var(--font-title); font-weight: 600; font-size: 26px; margin: 0; }
+  .side label { display: flex; flex-direction: column; gap: 6px; font-size: 15px; color: var(--muted); }
+  select { width: 100%; background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 12px; font-family: var(--font-text); font-size: 17px; }
+  .btn { background: var(--red); color: #fff; border: 0; border-radius: 8px; padding: 13px 18px; font-family: var(--font-title); font-weight: 600; font-size: 19px; letter-spacing: 0.02em; cursor: pointer; margin-top: 4px; }
+  .btn:hover { background: var(--red-hot); }
+
+  /* ---------- Indicadores ---------- */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+  .kpi { padding: 20px 22px; min-width: 0; container-type: inline-size; }
+  .kpi + .kpi { border-left: 1px solid var(--line); }
+  .kpi span { display: block; color: var(--muted); font-size: 16px; }
+  /* O número se ajusta à largura do próprio card, então nunca passa da borda */
+  .kpi strong { display: block; font-family: var(--font-title); font-weight: 600; font-size: 32px; line-height: 1.1; font-variant-numeric: tabular-nums; margin-top: 2px; white-space: nowrap; }
+  @supports (font-size: 1cqw) { .kpi strong { font-size: clamp(24px, 17cqw, 52px); } }
+  .note { color: var(--muted); font-size: 15px; margin: 12px 2px 0; min-height: 1.4em; }
+
+  /* ---------- Gráficos ---------- */
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 8px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 24px 24px 18px; min-width: 0; }
+  .panel h3 { font-family: var(--font-title); font-weight: 600; font-size: 29px; line-height: 1.05; margin: 0 0 4px; }
+  .panel .sub { color: var(--muted); font-size: 16px; margin: 0 0 16px; }
+  .chart-box { position: relative; height: 290px; }
+  .legend { display: flex; gap: 18px; font-size: 15px; color: var(--muted); margin-bottom: 8px; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; }
+  .empty { display: none; padding: 56px 16px; text-align: center; color: var(--muted); background: var(--panel); border: 1px dashed var(--line); border-radius: 10px; }
+  footer { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 15px; max-width: 95ch; }
+
+  @media (max-width: 980px) {
+    .hero { grid-template-columns: 1fr; }
+    .gauge { justify-self: start; max-width: 320px; }
+    .layout { grid-template-columns: 1fr; }
+    .side { position: static; display: grid; grid-template-columns: repeat(2, 1fr); }
+    .side h2, .side .btn { grid-column: 1 / -1; }
+  }
+  @media (max-width: 760px) {
+    .grid { grid-template-columns: 1fr; }
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .kpi:nth-child(3) { border-left: 0; }
+    .kpi:nth-child(n+3) { border-top: 1px solid var(--line); }
+  }
+  @media (max-width: 520px) {
+    .wrap { padding: 0 16px 48px; }
+    .side { grid-template-columns: 1fr; }
+    .panel { padding: 20px 16px 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .g-fill { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">PORSCHE</div>
+
+  <section class="hero">
+    <div>
+      <h1>Para onde as vendas estão indo</h1>
+      <p>Quatro perguntas sobre 100 vendas: o que rende mais, se estamos crescendo, se chegamos a novos estados e como os clientes pagam.</p>
+    </div>
+    <div class="gauge" role="img" aria-label="Medidor da porcentagem de vendas entregues">
+      <svg viewBox="0 0 300 232" xmlns="http://www.w3.org/2000/svg" focusable="false">
+        <g id="g-ticks"></g>
+        <circle class="g-track" id="g-track" cx="150" cy="150" r="100"/>
+        <circle class="g-fill" id="g-fill" cx="150" cy="150" r="100"/>
+        <text class="g-num" id="g-num" x="150" y="160" text-anchor="middle">0%</text>
+        <text class="g-label" x="150" y="186" text-anchor="middle">das vendas já foram entregues</text>
+      </svg>
+    </div>
+  </section>
+
+  <div class="layout">
+    <aside class="side" aria-label="Filtros">
+      <h2>Filtros</h2>
+      <label>Família
+        <select id="f-family"></select>
+      </label>
+      <label>Estado
+        <select id="f-state"></select>
+      </label>
+      <label>Ano da venda
+        <select id="f-year"></select>
+      </label>
+      <label>Método de pagamento
+        <select id="f-pay"></select>
+      </label>
+      <button id="btn-clear" class="btn" type="button">Limpar filtros</button>
+    </aside>
+
+    <div>
+      <section class="kpis" aria-label="Indicadores">
+        <div class="kpi"><span>Total de vendas</span><strong id="k-count">0</strong></div>
+        <div class="kpi"><span>Receita total</span><strong id="k-revenue">$0</strong></div>
+        <div class="kpi"><span>Ticket médio</span><strong id="k-ticket">$0</strong></div>
+        <div class="kpi"><span>Estados atendidos</span><strong id="k-states">0</strong></div>
+      </section>
+      <p class="note" id="note-cancel"></p>
+
+      <div class="empty" id="empty">Nenhuma venda com essa combinação de filtros. Clique em "Limpar filtros" para voltar.</div>
+
+      <main class="grid" id="charts">
+        <article class="panel">
+          <h3>Qual família de modelo gera mais receita?</h3>
+          <p class="sub">Receita por família, em US$</p>
+          <div class="chart-box"><canvas id="c-family" role="img" aria-label="Receita por família de modelo"></canvas></div>
+        </article>
+
+        <article class="panel">
+          <h3>Estou evoluindo nas vendas?</h3>
+          <p class="sub">Receita por trimestre, em US$</p>
+          <div class="legend">
+            <span><i style="background:rgb(var(--ink-rgb))"></i>Até hoje</span>
+            <span><i style="background:rgba(var(--ink-rgb),.25)"></i>Datas futuras</span>
+            <span><i style="background:var(--red)"></i>Maior valor</span>
+          </div>
+          <div class="chart-box" style="height:252px"><canvas id="c-quarter" role="img" aria-label="Receita por trimestre"></canvas></div>
+        </article>
+
+        <article class="panel">
+          <h3>Estamos expandindo?</h3>
+          <p class="sub">Estados diferentes com vendas, por ano</p>
+          <div class="chart-box"><canvas id="c-states" role="img" aria-label="Estados com vendas por ano"></canvas></div>
+        </article>
+
+        <article class="panel">
+          <h3>Quais métodos de pagamento mais aparecem?</h3>
+          <p class="sub">Participação de cada método no total de vendas</p>
+          <div class="chart-box"><canvas id="c-pay" role="img" aria-label="Participação por método de pagamento"></canvas></div>
+        </article>
+      </main>
+    </div>
+  </div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+/* ============================================================
+   DADOS (colunas sanitizadas, com INVALID tratado como nulo)
+   ============================================================ */
+const RAW = [{"id": 6, "model": "718 Cayman", "date": null, "price": 79500.0, "pay": "Credit Card", "state": "MA", "status": "Delivered"}, {"id": 7, "model": "911 Turbo S", "date": "2024-03-14", "price": 235000.0, "pay": "Wire Transfer", "state": "WA", "status": "Delivered"}, {"id": 8, "model": "Cayenne Coupe", "date": "2024-04-18", "price": 112750.0, "pay": "Financing", "state": "TX", "status": "In Transit"}, {"id": 9, "model": "Macan S", "date": null, "price": 68900.0, "pay": "Cash", "state": "CO", "status": "Pending"}, {"id": 10, "model": "Taycan 4S", "date": "2024-05-22", "price": 121000.0, "pay": "Bank Transfer", "state": "CA", "status": "Delivered"}, {"id": 11, "model": "Panamera 4", "date": "2024-08-06", "price": 104500.0, "pay": "Credit Card", "state": "FL", "status": "Cancelled"}, {"id": 12, "model": "911 Carrera S", "date": "2024-07-11", "price": 96300.0, "pay": "Lease", "state": "NY", "status": "Delivered"}, {"id": 13, "model": "Cayenne E-Hybrid", "date": null, "price": 89750.0, "pay": "Wire Transfer", "state": "CA", "status": "Pending Approval"}, {"id": 14, "model": "718 Boxster", "date": "2024-08-19", "price": 73500.0, "pay": "Debit Card", "state": "IL", "status": "Shipped"}, {"id": 15, "model": "Macan GTS", "date": "2024-09-02", "price": 95000.0, "pay": "Financing", "state": "AZ", "status": "In Transit"}, {"id": 16, "model": "Taycan Turbo", "date": "2024-09-17", "price": 153200.5, "pay": "ACH Payment", "state": "TX", "status": "Delivered"}, {"id": 17, "model": "911 GT3", "date": null, "price": 241000.0, "pay": "Wire Transfer", "state": "NV", "status": "Pending"}, {"id": 18, "model": "Panamera Turbo S", "date": "2024-05-11", "price": 132000.0, "pay": "Cash", "state": "CA", "status": "Delivered"}, {"id": 19, "model": "Cayenne Turbo GT", "date": "2024-12-12", "price": 188000.0, "pay": "Crypto Payment", "state": "TX", "status": "Awaiting Delivery"}, {"id": 20, "model": "911 Carrera Cabriolet", "date": "2024-12-25", "price": 127800.0, "pay": "Credit Card", "state": "GA", "status": "Delivered"}, {"id": 21, "model": "Macan", "date": "2025-01-06", "price": 58900.0, "pay": "Bank Transfer", "state": "FL", "status": "Pending"}, {"id": 22, "model": "718 Spyder RS", "date": null, "price": 164000.0, "pay": "Financing", "state": "OR", "status": "In Transit"}, {"id": 23, "model": "Taycan Cross Turismo", "date": "2025-02-14", "price": 118500.0, "pay": "Wire Transfer", "state": "NC", "status": "Delivered"}, {"id": 24, "model": "Cayenne S", "date": null, "price": 91300.0, "pay": "Credit Card", "state": "TN", "status": "Pending"}, {"id": 25, "model": "911 Targa 4S", "date": "2025-03-21", "price": 158750.0, "pay": "Lease", "state": "MN", "status": "Delivered"}, {"id": 26, "model": "Panamera", "date": "2025-03-28", "price": 72000.0, "pay": "Bank Transfer", "state": "PA", "status": "Cancelled"}, {"id": 27, "model": "Macan Electric", "date": "2025-04-09", "price": 86500.0, "pay": "Wire Transfer", "state": "TX", "status": "Delivered"}, {"id": 28, "model": "911 Dakar", "date": null, "price": 270000.0, "pay": "Cash", "state": "UT", "status": "Awaiting Pickup"}, {"id": 29, "model": "Taycan GTS", "date": "2025-05-12", "price": 139000.0, "pay": "Financing", "state": "NC", "status": "In Transit"}, {"id": 30, "model": "Cayenne", "date": "2025-06-18", "price": 76800.0, "pay": "Credit Card", "state": "MI", "status": "Delivered"}, {"id": 31, "model": "718 Cayman GT4 RS", "date": null, "price": 173600.0, "pay": "Wire Transfer", "state": "OH", "status": "Pending"}, {"id": 32, "model": "911 Carrera GTS", "date": "2025-07-07", "price": 119900.0, "pay": "Cash", "state": "IN", "status": "Delivered"}, {"id": 33, "model": "Panamera 4 E-Hybrid", "date": "2025-07-22", "price": 109250.0, "pay": "Lease", "state": "TX", "status": "In Transit"}, {"id": 34, "model": "Macan T", "date": "2025-08-14", "price": 82000.0, "pay": "Wire Transfer", "state": "FL", "status": "Delivered"}, {"id": 35, "model": "Taycan Turbo S", "date": "2025-09-01", "price": 214000.0, "pay": "Crypto Payment", "state": "CA", "status": "Pending Review"}, {"id": 36, "model": "911 Carrera", "date": null, "price": 124500.0, "pay": "Credit Card", "state": "FL", "status": "Delivered"}, {"id": 37, "model": "Cayenne S", "date": "2025-09-18", "price": 98200.0, "pay": "Bank Transfer", "state": "CA", "status": "Pending"}, {"id": 38, "model": "Macan", "date": "2025-10-04", "price": 67500.0, "pay": "Financing", "state": "OH", "status": "Delivered"}, {"id": 39, "model": "Taycan", "date": "2025-10-12", "price": 116900.0, "pay": "Wire Transfer", "state": "WI", "status": "In Transit"}, {"id": 40, "model": "Panamera 4S", "date": "2025-10-29", "price": 112000.0, "pay": "Cash", "state": "MO", "status": "Delivered"}, {"id": 41, "model": "718 Boxster", "date": "2025-02-11", "price": 74000.0, "pay": "Debit Card", "state": "NE", "status": "Cancelled"}, {"id": 42, "model": "911 Turbo", "date": "2025-11-16", "price": 198300.0, "pay": "Wire Transfer", "state": "NM", "status": "Awaiting Delivery"}, {"id": 43, "model": "Cayenne Coupe", "date": null, "price": 103750.0, "pay": "Wire Transfer", "state": "AZ", "status": "Pending Approval"}, {"id": 44, "model": "Macan GTS", "date": null, "price": 93600.0, "pay": "Financing", "state": "CA", "status": "Shipped"}, {"id": 45, "model": "Taycan 4S", "date": "2025-12-07", "price": 129000.0, "pay": "ACH Payment", "state": "VA", "status": "In Transit"}, {"id": 46, "model": "Panamera Turbo", "date": "2025-12-22", "price": 136000.0, "pay": "Credit Card", "state": "CO", "status": "Delivered"}, {"id": 47, "model": "911 GT3 RS", "date": null, "price": 286500.0, "pay": "Wire Transfer", "state": "TX", "status": "Pending"}, {"id": 48, "model": "Cayenne E-Hybrid", "date": "2026-01-08", "price": 92800.0, "pay": "Lease", "state": "CA", "status": "Delivered"}, {"id": 49, "model": "Macan T", "date": "2026-01-15", "price": 72400.0, "pay": "Cash", "state": "AZ", "status": "Awaiting Pickup"}, {"id": 50, "model": "Taycan Turbo", "date": "2026-01-28", "price": 158500.0, "pay": "Crypto Payment", "state": "GA", "status": "Delivered"}, {"id": 51, "model": "718 Cayman", "date": "2026-02-03", "price": 69900.0, "pay": "Bank Transfer", "state": "CA", "status": "Pending"}, {"id": 52, "model": "911 Targa 4", "date": null, "price": 141250.0, "pay": "Financing", "state": "CA", "status": "In Transit"}, {"id": 53, "model": "Panamera", "date": "2026-02-19", "price": 71500.0, "pay": "Wire Transfer", "state": "OK", "status": "Delivered"}, {"id": 54, "model": "Cayenne Turbo", "date": "2026-02-25", "price": 146800.0, "pay": "Credit Card", "state": "KS", "status": "Pending"}, {"id": 55, "model": "Macan Electric", "date": "2026-03-01", "price": 89700.0, "pay": "Lease", "state": "LA", "status": "Delivered"}, {"id": 56, "model": "911 Carrera S", "date": "2026-03-14", "price": 104600.0, "pay": "Bank Transfer", "state": "HI", "status": "Cancelled"}, {"id": 57, "model": "Taycan GTS", "date": null, "price": 142000.0, "pay": "Wire Transfer", "state": "CA", "status": "Delivered"}, {"id": 58, "model": "Cayenne", "date": "2026-04-08", "price": 78400.0, "pay": "Cash", "state": "NV", "status": "Awaiting Review"}, {"id": 59, "model": "718 Spyder RS", "date": null, "price": 169000.0, "pay": "Financing", "state": "KY", "status": "In Transit"}, {"id": 60, "model": "911 Dakar", "date": "2026-04-21", "price": 268900.0, "pay": "Credit Card", "state": "CA", "status": "Delivered"}, {"id": 61, "model": "Panamera 4", "date": "2026-04-29", "price": 101300.0, "pay": "Wire Transfer", "state": "TX", "status": "Pending"}, {"id": 62, "model": "Macan S", "date": "2026-05-05", "price": 66750.0, "pay": "Cash", "state": "MO", "status": "Delivered"}, {"id": 63, "model": "Taycan Cross Turismo", "date": "2026-05-14", "price": 127900.0, "pay": "Lease", "state": "PA", "status": "In Transit"}, {"id": 64, "model": "Cayenne Turbo GT", "date": "2026-05-23", "price": 200000.0, "pay": "Wire Transfer", "state": "OH", "status": "Delivered"}, {"id": 65, "model": "911 Carrera Cabriolet", "date": "2026-06-02", "price": 132000.0, "pay": "Crypto Payment", "state": "AK", "status": "Pending Review"}, {"id": 66, "model": "718 Cayman GT4 RS", "date": "2026-06-15", "price": 176400.0, "pay": "Credit Card", "state": "TX", "status": "Delivered"}, {"id": 67, "model": "Panamera 4 E-Hybrid", "date": null, "price": 108500.0, "pay": "Bank Transfer", "state": "NJ", "status": "Cancelled"}, {"id": 68, "model": "Macan", "date": "2026-07-07", "price": 59000.0, "pay": "Financing", "state": "NC", "status": "Awaiting Delivery"}, {"id": 69, "model": "Taycan Turbo S", "date": "2026-07-20", "price": 218000.0, "pay": "Wire Transfer", "state": "NE", "status": "Pending"}, {"id": 70, "model": "Cayenne S", "date": null, "price": 99950.0, "pay": "Debit Card", "state": "NJ", "status": "Delivered"}, {"id": 71, "model": "911 Carrera GTS", "date": "2026-04-08", "price": 121750.0, "pay": "Credit Card", "state": "AZ", "status": "Delivered"}, {"id": 72, "model": "718 Boxster GTS", "date": "2026-08-18", "price": 91500.0, "pay": "Lease", "state": "NV", "status": "Shipped"}, {"id": 73, "model": "Panamera Turbo S", "date": "2026-08-31", "price": 134000.0, "pay": "Wire Transfer", "state": "NY", "status": "In Transit"}, {"id": 74, "model": "Macan GTS", "date": "2026-09-09", "price": 96800.0, "pay": "ACH Payment", "state": "NC", "status": "Delivered"}, {"id": 75, "model": "Taycan 4S", "date": "2026-09-17", "price": 131600.0, "pay": "Wire Transfer", "state": "TX", "status": "Pending Approval"}, {"id": 76, "model": "Cayenne E-Hybrid", "date": "2026-09-28", "price": 94300.0, "pay": "Cash", "state": "WI", "status": "Delivered"}, {"id": 77, "model": "911 Turbo S", "date": "2026-10-06", "price": 242000.0, "pay": "Crypto Payment", "state": "TX", "status": "Awaiting Pickup"}, {"id": 78, "model": "718 Cayman S", "date": "2026-10-16", "price": 82750.0, "pay": "Credit Card", "state": "OH", "status": "Cancelled"}, {"id": 79, "model": "Macan Electric", "date": "2026-10-29", "price": 91300.0, "pay": "Wire Transfer", "state": "CA", "status": "Delivered"}, {"id": 80, "model": "Panamera", "date": "2026-11-03", "price": 79900.0, "pay": "Financing", "state": "TX", "status": "Pending"}, {"id": 81, "model": "Cayenne Coupe", "date": null, "price": 111000.0, "pay": "Bank Transfer", "state": "TX", "status": "In Transit"}, {"id": 82, "model": "911 Targa 4S", "date": "2026-12-11", "price": 156500.0, "pay": "Cash", "state": "VA", "status": "Delivered"}, {"id": 83, "model": "Taycan", "date": "2026-12-24", "price": 119900.0, "pay": "Lease", "state": "AZ", "status": "Pending"}, {"id": 84, "model": "Macan T", "date": null, "price": 73200.0, "pay": "Wire Transfer", "state": "VA", "status": "Delivered"}, {"id": 85, "model": "911 GT3", "date": "2026-12-28", "price": 224000.0, "pay": "Wire Transfer", "state": "ID", "status": "Awaiting Delivery"}, {"id": 86, "model": "911 Carrera", "date": "2027-01-15", "price": 126900.0, "pay": "Credit Card", "state": "FL", "status": "Delivered"}, {"id": 87, "model": "Cayenne", "date": "2027-01-29", "price": 84500.0, "pay": "Bank Transfer", "state": "CA", "status": "Pending"}, {"id": 88, "model": "Macan S", "date": "2027-02-11", "price": 69800.0, "pay": "Financing", "state": "FL", "status": "Delivered"}, {"id": 89, "model": "Taycan 4S", "date": null, "price": 132700.0, "pay": "Wire Transfer", "state": "CO", "status": "In Transit"}, {"id": 90, "model": "Panamera", "date": "2027-03-05", "price": 81000.0, "pay": "Cash", "state": "TX", "status": "Delivered"}, {"id": 91, "model": "718 Cayman", "date": "2027-03-18", "price": 78900.0, "pay": "Debit Card", "state": "WA", "status": "Cancelled"}, {"id": 92, "model": "911 Turbo S", "date": "2027-04-02", "price": 249300.0, "pay": "Wire Transfer", "state": "MA", "status": "Awaiting Delivery"}, {"id": 93, "model": "Cayenne Coupe", "date": null, "price": 108750.0, "pay": "Wire Transfer", "state": "AZ", "status": "Pending Approval"}, {"id": 94, "model": "Macan Electric", "date": null, "price": 92600.0, "pay": "Financing", "state": "IL", "status": "Shipped"}, {"id": 95, "model": "Taycan Turbo", "date": "2027-05-12", "price": 164000.0, "pay": "ACH Payment", "state": "TX", "status": "In Transit"}, {"id": 96, "model": "Panamera 4S", "date": "2027-05-27", "price": 119000.0, "pay": "Credit Card", "state": "CA", "status": "Delivered"}, {"id": 97, "model": "911 GT3", "date": null, "price": 232500.0, "pay": "Wire Transfer", "state": "NV", "status": "Pending"}, {"id": 98, "model": "Cayenne E-Hybrid", "date": "2027-06-18", "price": 96800.0, "pay": "Lease", "state": "NC", "status": "Delivered"}, {"id": 99, "model": "Macan T", "date": "2027-07-03", "price": 74400.0, "pay": "Cash", "state": "AZ", "status": "Awaiting Pickup"}, {"id": 100, "model": "Taycan GTS", "date": "2027-07-22", "price": 148500.0, "pay": "Crypto Payment", "state": "GA", "status": "Delivered"}, {"id": 101, "model": "718 Boxster", "date": "2027-08-08", "price": 71900.0, "pay": "Bank Transfer", "state": "CA", "status": "Pending"}, {"id": 102, "model": "911 Targa 4", "date": null, "price": 143250.0, "pay": "Financing", "state": "CA", "status": "In Transit"}, {"id": 103, "model": "Panamera Turbo", "date": "2027-09-19", "price": 137500.0, "pay": "Wire Transfer", "state": "OK", "status": "Delivered"}, {"id": 104, "model": "Cayenne Turbo GT", "date": "2027-09-25", "price": 204800.0, "pay": "Credit Card", "state": "KS", "status": "Pending"}, {"id": 105, "model": "911 Dakar", "date": "2027-10-01", "price": 271700.0, "pay": "Lease", "state": "LA", "status": "Delivered"}];
+
+/* ---------- Preparação: campos derivados ---------- */
+const TODAY = new Date();
+const FAMILIES = ["911", "718", "Cayenne", "Macan", "Panamera", "Taycan"];
+
+const SALES = RAW.map(r => {
+  const family = FAMILIES.find(f => r.model.startsWith(f)) || "Outros";
+  const d = r.date ? new Date(r.date + "T00:00:00") : null;
+  return {
+    id: r.id, model: r.model, family: family,
+    price: r.price, pay: r.pay, state: r.state, status: r.status,
+    date: d,
+    year: d ? d.getFullYear() : null,
+    quarter: d ? d.getFullYear() + " T" + (Math.floor(d.getMonth() / 3) + 1) : null,
+    qStart: d ? new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3, 1) : null,
+    cancelled: r.status === "Cancelled",
+    delivered: r.status === "Delivered"
+  };
+});
+
+/* ---------- Formatação ---------- */
+const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const usdShort = v => v >= 1e6 ? "$" + (v / 1e6).toFixed(1) + "M" : "$" + Math.round(v / 1e3) + "k";
+const pct = v => (v * 100).toFixed(0) + "%";
+
+/* ---------- Filtros ---------- */
+const el = id => document.getElementById(id);
+const ALL = "Todos";
+const NO_DATE = "Sem data";
+const uniq = arr => Array.from(new Set(arr));
+
+function fillSelect(id, values) {
+  el(id).innerHTML = [ALL].concat(values).map(v => `<option value="${v}">${v}</option>`).join("");
+}
+fillSelect("f-family", FAMILIES);
+fillSelect("f-state", uniq(SALES.map(s => s.state)).sort());
+fillSelect("f-year", uniq(SALES.filter(s => s.year).map(s => s.year)).sort().concat([NO_DATE]));
+fillSelect("f-pay", uniq(SALES.map(s => s.pay)).sort());
+
+function getFiltered() {
+  const fam = el("f-family").value, st = el("f-state").value;
+  const yr = el("f-year").value, pay = el("f-pay").value;
+  return SALES.filter(s =>
+    (fam === ALL || s.family === fam) &&
+    (st === ALL || s.state === st) &&
+    (pay === ALL || s.pay === pay) &&
+    (yr === ALL || (yr === NO_DATE ? s.year === null : String(s.year) === yr))
+  );
+}
+
+/* ---------- Medidor de entregas (arco de 240 graus, como um conta-giros) ---------- */
+const G = { cx: 150, cy: 150, r: 100, start: 150, sweep: 240 };
+const G_CIRC = 2 * Math.PI * G.r;
+const G_LEN = G_CIRC * G.sweep / 360;
+
+function buildGauge() {
+  // Desenha o arco-base e as marcações
+  const rot = `rotate(${G.start} ${G.cx} ${G.cy})`;
+  ["g-track", "g-fill"].forEach(id => el(id).setAttribute("transform", rot));
+  el("g-track").setAttribute("stroke-dasharray", G_LEN + " " + G_CIRC);
+  let ticks = "";
+  for (let i = 0; i <= 20; i++) {
+    const major = i % 5 === 0;
+    const a = (G.start + G.sweep * i / 20) * Math.PI / 180;
+    const r1 = 122, r2 = major ? 138 : 131;
+    ticks += `<line class="g-tick${major ? " major" : ""}" x1="${(G.cx + r1 * Math.cos(a)).toFixed(1)}" y1="${(G.cy + r1 * Math.sin(a)).toFixed(1)}" x2="${(G.cx + r2 * Math.cos(a)).toFixed(1)}" y2="${(G.cy + r2 * Math.sin(a)).toFixed(1)}"/>`;
+  }
+  el("g-ticks").innerHTML = ticks;
+}
+function setGauge(p) {
+  el("g-fill").setAttribute("stroke-dasharray", (G_LEN * p).toFixed(1) + " " + G_CIRC);
+  el("g-num").textContent = Math.round(p * 100) + "%";
+}
+buildGauge();
+
+/* ---------- Cores lidas do tema ---------- */
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const ink = (alpha) => alpha === undefined ? "rgb(" + css("--ink-rgb") + ")" : "rgba(" + css("--ink-rgb") + "," + alpha + ")";
+
+function applyChartDefaults() {
+  Chart.defaults.font.family = css("--font-text");
+  Chart.defaults.font.size = 13;
+  Chart.defaults.color = css("--muted");
+  Chart.defaults.borderColor = css("--grid");
+}
+
+/* Plugin simples: escreve o valor ao lado/em cima de cada barra */
+const valueLabels = {
+  id: "valueLabels",
+  afterDatasetsDraw(chart, args, opts) {
+    if (!opts || !opts.format) return;
+    const ctx = chart.ctx;
+    const horiz = chart.options.indexAxis === "y";
+    ctx.save();
+    ctx.fillStyle = css("--text");
+    ctx.font = "600 14px " + css("--font-text");
+    chart.getDatasetMeta(0).data.forEach((bar, i) => {
+      const v = chart.data.datasets[0].data[i];
+      if (v === null || v === undefined) return;
+      const txt = opts.format(v);
+      if (horiz) { ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(txt, bar.x + 6, bar.y); }
+      else { ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.fillText(txt, bar.x, bar.y - 4); }
+    });
+    ctx.restore();
+  }
+};
+
+const charts = {};
+function upsert(key, canvasId, config) {
+  config.plugins = (config.plugins || []).concat([valueLabels]);
+  if (charts[key]) { charts[key].destroy(); }
+  charts[key] = new Chart(el(canvasId), config);
+}
+const baseOpts = { responsive: true, maintainAspectRatio: false };
+const maxIndex = arr => arr.indexOf(Math.max.apply(null, arr));
+
+function sumBy(list, keyFn) {
+  const m = new Map();
+  list.forEach(s => { const k = keyFn(s); m.set(k, (m.get(k) || 0) + s.price); });
+  return m;
+}
+
+/* Regra visual: vermelho = maior valor de cada gráfico; o resto em tom claro */
+
+/* 1) Receita por família */
+function drawFamily(valid) {
+  const rows = Array.from(sumBy(valid, s => s.family)).sort((a, b) => b[1] - a[1]);
+  const values = rows.map(r => r[1]);
+  const top = maxIndex(values);
+  upsert("family", "c-family", {
+    type: "bar",
+    data: { labels: rows.map(r => r[0]), datasets: [{ data: values, backgroundColor: values.map((v, i) => i === top ? css("--red") : ink(0.85)), borderRadius: 3, barPercentage: 0.7 }] },
+    options: Object.assign({}, baseOpts, {
+      indexAxis: "y",
+      layout: { padding: { right: 60 } },
+      scales: { x: { ticks: { callback: usdShort }, grid: { color: css("--grid") }, border: { display: false } }, y: { grid: { display: false }, ticks: { font: { size: 15 }, color: css("--text") } } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => usd.format(c.parsed.x) } }, valueLabels: { format: usdShort } }
+    })
+  });
+}
+
+/* 2) Receita por trimestre (datas futuras em tom apagado) */
+function drawQuarter(valid) {
+  const info = new Map();
+  valid.filter(s => s.quarter).forEach(s => {
+    const o = info.get(s.quarter) || { total: 0, start: s.qStart };
+    o.total += s.price; info.set(s.quarter, o);
+  });
+  const rows = Array.from(info).sort((a, b) => a[1].start - b[1].start);
+  const values = rows.map(r => r[1].total);
+  const top = maxIndex(values);
+  upsert("quarter", "c-quarter", {
+    type: "bar",
+    data: {
+      labels: rows.map(r => r[0]),
+      datasets: [{
+        data: values,
+        backgroundColor: rows.map((r, i) => i === top ? css("--red") : (r[1].start > TODAY ? ink(0.25) : ink(0.85))),
+        borderRadius: 3
+      }]
+    },
+    options: Object.assign({}, baseOpts, {
+      scales: { y: { ticks: { callback: usdShort }, border: { display: false } }, x: { grid: { display: false }, ticks: { maxRotation: 60, minRotation: 45, font: { size: 12 } } } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => usd.format(c.parsed.y) } } }
+    })
+  });
+}
+
+/* 3) Estados distintos por ano */
+function drawStates(valid) {
+  const m = new Map();
+  valid.filter(s => s.year).forEach(s => {
+    if (!m.has(s.year)) m.set(s.year, new Set());
+    m.get(s.year).add(s.state);
+  });
+  const rows = Array.from(m).sort((a, b) => a[0] - b[0]);
+  const values = rows.map(r => r[1].size);
+  const top = maxIndex(values);
+  upsert("states", "c-states", {
+    type: "bar",
+    data: {
+      labels: rows.map(r => String(r[0])),
+      datasets: [{
+        data: values,
+        backgroundColor: rows.map((r, i) => i === top ? css("--red") : (r[0] > TODAY.getFullYear() ? ink(0.25) : ink(0.85))),
+        borderRadius: 3, barPercentage: 0.6
+      }]
+    },
+    options: Object.assign({}, baseOpts, {
+      layout: { padding: { top: 22 } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 }, border: { display: false } }, x: { grid: { display: false }, ticks: { font: { size: 15 }, color: css("--text") } } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.parsed.y + " estados" } }, valueLabels: { format: v => String(v) } }
+    })
+  });
+}
+
+/* 4) Participação por método de pagamento (rosca) */
+function drawPay(valid) {
+  const count = new Map();
+  valid.forEach(s => count.set(s.pay, (count.get(s.pay) || 0) + 1));
+  const rows = Array.from(count).sort((a, b) => b[1] - a[1]);
+  const total = valid.length;
+  const colors = rows.map((r, i) => i === 0 ? css("--red") : ink(Math.max(0.14, 0.85 - (i - 1) * 0.11)));
+  upsert("pay", "c-pay", {
+    type: "doughnut",
+    data: {
+      labels: rows.map(r => r[0] + " (" + pct(r[1] / total) + ")"),
+      datasets: [{ data: rows.map(r => r[1]), backgroundColor: colors, borderColor: css("--panel"), borderWidth: 2 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: "60%",
+      plugins: {
+        legend: { position: "right", labels: { boxWidth: 12, padding: 10, font: { size: 14 }, color: css("--text") } },
+        tooltip: { callbacks: { label: c => c.parsed + " vendas" } }
+      }
+    }
+  });
+}
+
+/* ---------- Atualização geral ---------- */
+function update() {
+  applyChartDefaults();
+  const filtered = getFiltered();
+  const valid = filtered.filter(s => !s.cancelled);      // canceladas ficam fora dos números
+  const cancelled = filtered.length - valid.length;
+
+  const revenue = valid.reduce((a, s) => a + s.price, 0);
+  el("k-count").textContent = valid.length.toLocaleString("en-US");
+  el("k-revenue").textContent = usd.format(revenue);
+  el("k-ticket").textContent = valid.length ? usd.format(revenue / valid.length) : "$0";
+  el("k-states").textContent = uniq(valid.map(s => s.state)).length;
+
+  const delivered = valid.filter(s => s.delivered).length;
+  setGauge(valid.length ? delivered / valid.length : 0);
+
+  el("note-cancel").textContent = cancelled
+    ? cancelled + (cancelled === 1 ? " venda cancelada não entra" : " vendas canceladas não entram") + " nos números."
+    : "";
+
+  const hasData = valid.length > 0;
+  el("empty").style.display = hasData ? "none" : "block";
+  el("charts").style.display = hasData ? "grid" : "none";
+  if (!hasData) return;
+
+  drawFamily(valid); drawQuarter(valid); drawStates(valid); drawPay(valid);
+}
+
+["f-family", "f-state", "f-year", "f-pay"].forEach(id => el(id).addEventListener("change", update));
+el("btn-clear").addEventListener("click", () => {
+  ["f-family", "f-state", "f-year", "f-pay"].forEach(id => { el(id).value = ALL; });
+  update();
+});
+
+const nSemData = SALES.filter(s => !s.date).length;
+el("foot").textContent = "Fonte: base sanitizada de 100 vendas, valores em US$. Vendas canceladas ficam fora dos números. O medidor mostra a parte das vendas com status Delivered. " +
+  nSemData + " vendas sem data válida ficam fora dos gráficos de trimestre e de ano. Em vermelho, o maior valor de cada gráfico. Barras apagadas indicam datas posteriores a hoje.";
+
+update();
+</script>
+</body>
+</html>
